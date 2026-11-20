@@ -1,26 +1,45 @@
+
 pipeline {
     agent any
-    environment {
-        IMAGE_NAME = 'yohi-portfolio'
-        CONTAINER_NAME = 'yohi-portfolio'
-        PORT = '4321'
-    }
+
     stages {
-        
+
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main',
+                    url: 'YOUR_GITHUB_REPOSITORY_URL'
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Build Application') {
             steps {
-                sh 'docker build -t $webapp:latest .'
+                sh 'npm run build'
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t yohi-portfolio:latest .'
+            }
+        }
+
         stage('Deploy Container') {
             steps {
                 sh '''
-                    docker rm -f ${yohi-portfolio} || true
+                    docker rm -f yohi-portfolio || true
+
                     docker run -d \
                         --name yohi-portfolio \
                         --restart unless-stopped \
@@ -30,12 +49,14 @@ pipeline {
             }
         }
     }
+
     post {
         success {
-            echo 'Grunge Astro application deployed successfully'
+            echo 'Yohi Portfolio application deployed successfully!'
         }
+
         failure {
-            echo 'Deployemnt failed. Check jenkins console output'
+            echo 'Deployment failed. Check Jenkins console output.'
         }
     }
 }
