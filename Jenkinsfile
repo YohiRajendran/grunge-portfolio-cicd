@@ -1,6 +1,8 @@
-
 pipeline {
     agent any
+    tools {
+        nodejs 'Node20'
+    }
 
     stages {
 
@@ -12,7 +14,7 @@ pipeline {
 
         stage('Checkout from Git') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/YohiRajendran/grunge-portfolio-cicd.git''
+                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/YohiRajendran/grunge-portfolio-cicd.git'
             }
         }
 
