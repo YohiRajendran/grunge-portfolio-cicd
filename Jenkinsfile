@@ -3,6 +3,9 @@ pipeline {
     tools {
         nodejs 'Node20'
     }
+    environment {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
 
     stages {
 
@@ -17,25 +20,48 @@ pipeline {
                 git branch: 'main', changelog: false, poll: false, url: 'https://github.com/YohiRajendran/grunge-portfolio-cicd.git'
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                sh '''
-                    docker build -t yohi-portfolio:latest .
-                '''
+         stage("Sonarqube Analysis "){
+            steps{
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=yohi \
+                    -Dsonar.projectKey=yohi '''
+                }
             }
         }
+        stage("quality gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-server' 
+                }
+            } 
+        }
+
+        stage('Build Docker Image & Push') {
+            steps {
+                script {
+                    
+                
+                withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/'){
+                sh '''
+                    docker build -t grunge-portfolio:latest .
+                    docker tag grunge-portfolio yoheswari/grunge-portfolio:latest
+                    docker push yoheswari/grunge-portfolio:latest
+                ''' }
+                }
+            }
+        }
+        
 
         stage('Deploy Container') {
             steps {
                 sh '''
-                    docker rm -f yohi-portfolio || true
+                    docker rm -f grunge-portfolio || true
 
                     docker run -d \
-                        --name yohi-portfolio \
+                        --name grunge-portfolio \
                         --restart unless-stopped \
                         -p 4321:4321 \
-                        yohi-portfolio:latest
+                        grunge-portfolio:latest
                 '''
             }
         }
@@ -44,7 +70,7 @@ pipeline {
             steps {
                 sh '''
                     docker ps
-                    docker logs --tail 20 yohi-portfolio
+                    docker logs --tail 20 grunge-portfolio
                 '''
             }
         }
@@ -52,7 +78,7 @@ pipeline {
 
     post {
         success {
-            echo 'Yohi Portfolio deployed successfully!'
+            echo 'grunge-Portfolio deployed successfully!'
         }
 
         failure {
