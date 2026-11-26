@@ -74,6 +74,39 @@ pipeline {
                 '''
             }
         }
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                withKubeConfig([
+                    credentialsId: 'k8s-kubeconfig'
+                ]) {
+                    sh '''
+                        kubectl apply -f k8s/deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+        
+                        kubectl rollout restart deployment/grunge-portfolio -n myapp
+        
+                        kubectl rollout status deployment/grunge-portfolio \
+                            -n myapp --timeout=120s
+                    '''
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                withKubeConfig([
+                    credentialsId: 'k8s-kubeconfig'
+                ]) {
+                    sh '''
+                        kubectl get deployments -n myapp
+                        kubectl get pods -n myapp -o wide
+                        kubectl get services -n myapp
+                    '''
+                }
+            }
+        }
+
     }
 
     post {
