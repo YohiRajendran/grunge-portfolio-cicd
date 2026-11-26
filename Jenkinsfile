@@ -78,7 +78,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([
-                    credentialsId: 'k8s-kubeconfig'
+                    credentialsId: 'k8s'
                 ]) {
                     sh '''
                         kubectl apply -f k8s/deployment.yaml
@@ -96,7 +96,7 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 withKubeConfig([
-                    credentialsId: 'k8s-kubeconfig'
+                    credentialsId: 'k8s'
                 ]) {
                     sh '''
                         kubectl get deployments -n myapp
